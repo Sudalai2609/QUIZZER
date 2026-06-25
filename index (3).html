@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — PDF to MCQ Quiz Engine</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: UPLOAD                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-upload" class="screen active">
+  <header class="top-bar">
+    <span class="logo">ExamForge<span class="logo-dot">.</span></span>
+    <span class="tagline">PDF → Quiz Engine</span>
+  </header>
+
+  <main class="upload-main">
+    <div class="upload-hero">
+      <h1 class="hero-title">Turn any exam PDF<br/><em>into a live quiz.</em></h1>
+      <p class="hero-sub">Drop messy, multi-format MCQ PDFs. ExamForge parses, structures, and quizzes you — instantly, in-browser.</p>
+    </div>
+
+    <div class="upload-zone" id="upload-zone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="6" width="24" height="32" rx="2" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M20 6v8h12" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M18 28l6-6 6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 22v10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M14 42h20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="upload-label">Drop PDF files here</p>
+      <p class="upload-sub">or <button class="link-btn" id="browse-btn">browse files</button></p>
+      <input type="file" id="file-input" accept=".pdf" multiple hidden />
+    </div>
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="library-section" id="library-section" style="display:none">
+      <h2 class="section-heading">Saved question banks</h2>
+      <div class="library-grid" id="library-grid"></div>
+    </div>
+
+    <div class="upload-actions" id="upload-actions" style="display:none">
+      <button class="btn btn-primary" id="process-btn">Extract &amp; Build Quiz</button>
+      <button class="btn btn-ghost" id="clear-btn">Clear all</button>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: PROCESSING                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-processing" class="screen">
+  <div class="processing-center">
+    <div class="processing-ring">
+      <svg class="ring-svg" viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="44"/>
+        <circle class="ring-progress" id="ring-progress" cx="50" cy="50" r="44"/>
+      </svg>
+      <span class="ring-pct" id="ring-pct">0%</span>
+    </div>
+    <h2 class="processing-title" id="processing-title">Extracting text…</h2>
+    <p class="processing-sub" id="processing-sub">Reading page 0 of 0</p>
+    <div class="processing-log" id="processing-log"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: CONFIGURE QUIZ                                         -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-configure" class="screen">
+  <header class="top-bar">
+    <button class="icon-btn" id="cfg-back-btn">← Back</button>
+    <span class="logo">ExamForge<span class="logo-dot">.</span></span>
+    <span></span>
+  </header>
+  <main class="configure-main">
+    <h1 class="cfg-title">Configure your quiz</h1>
+
+    <div class="stats-strip" id="cfg-stats"></div>
+
+    <div class="review-banner" id="review-banner" style="display:none">
+      <span class="review-icon">⚠</span>
+      <span id="review-count-msg"></span>
+      <button class="link-btn" id="goto-review-btn">Review now →</button>
+    </div>
+
+    <div class="cfg-card">
+      <label class="cfg-label">Mode</label>
+      <div class="mode-picker">
+        <button class="mode-btn active" data-mode="practice" id="mode-practice">
+          <span class="mode-icon">🎯</span>
+          <span class="mode-name">Practice</span>
+          <span class="mode-desc">Immediate feedback after each answer</span>
+        </button>
+        <button class="mode-btn" data-mode="exam" id="mode-exam">
+          <span class="mode-icon">📝</span>
+          <span class="mode-name">Exam</span>
+          <span class="mode-desc">No feedback until the end</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cfg-card">
+      <label class="cfg-label">Questions</label>
+      <div class="cfg-row">
+        <input type="range" id="q-count" min="5" max="100" value="20" class="range-input"/>
+        <span class="range-val" id="q-count-val">20</span>
+      </div>
+      <p class="cfg-hint">Available: <span id="q-available">0</span> questions</p>
+    </div>
+
+    <div class="cfg-card" id="timer-card">
+      <label class="cfg-label">Time limit <span class="badge">Exam only</span></label>
+      <div class="cfg-row">
+        <input type="range" id="time-limit" min="5" max="180" value="30" step="5" class="range-input"/>
+        <span class="range-val" id="time-limit-val">30 min</span>
+      </div>
+    </div>
+
+    <div class="cfg-card">
+      <label class="cfg-label">Options</label>
+      <label class="toggle-row">
+        <input type="checkbox" id="shuffle-q" checked />
+        <span class="toggle-knob"></span>
+        <span>Shuffle questions</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="shuffle-o" checked />
+        <span class="toggle-knob"></span>
+        <span>Shuffle options</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="skip-low" />
+        <span class="toggle-knob"></span>
+        <span>Skip low-confidence questions</span>
+      </label>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="start-quiz-btn">Start Quiz</button>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: REVIEW QUEUE                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-review" class="screen">
+  <header class="top-bar">
+    <button class="icon-btn" id="rv-back-btn">← Back</button>
+    <span class="logo">Review Queue</span>
+    <span></span>
+  </header>
+  <main class="review-main">
+    <p class="review-intro">These questions were flagged as potentially malformed. Edit or delete them before quizzing.</p>
+    <div id="review-list"></div>
+    <button class="btn btn-primary" id="rv-done-btn">Done reviewing</button>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: QUIZ                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-quiz" class="screen">
+  <header class="quiz-header">
+    <div class="quiz-progress-wrap">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+      </div>
+      <span class="quiz-progress-txt" id="quiz-progress-txt">1 / 20</span>
+    </div>
+    <div class="quiz-timer" id="quiz-timer" style="display:none">
+      <span class="timer-icon">⏱</span>
+      <span id="timer-display">30:00</span>
+    </div>
+  </header>
+
+  <main class="quiz-main">
+    <div class="question-meta">
+      <span class="q-number" id="q-number">Q1</span>
+      <span class="q-confidence" id="q-confidence"></span>
+    </div>
+    <div class="question-text" id="question-text"></div>
+
+    <div class="options-list" id="options-list"></div>
+
+    <div class="feedback-box" id="feedback-box" style="display:none">
+      <div class="feedback-inner" id="feedback-inner"></div>
+    </div>
+  </main>
+
+  <footer class="quiz-footer">
+    <button class="btn btn-ghost" id="quiz-skip-btn">Skip</button>
+    <button class="btn btn-primary" id="quiz-next-btn" disabled>Next →</button>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!--  SCREEN: RESULTS                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <header class="top-bar">
+    <span class="logo">ExamForge<span class="logo-dot">.</span></span>
+    <button class="icon-btn" id="res-home-btn">Home</button>
+  </header>
+  <main class="results-main">
+    <div class="score-hero">
+      <div class="score-ring-wrap">
+        <svg class="score-ring-svg" viewBox="0 0 160 160">
+          <circle class="score-ring-bg" cx="80" cy="80" r="70"/>
+          <circle class="score-ring-fill" id="score-ring-fill" cx="80" cy="80" r="70"/>
+        </svg>
+        <div class="score-ring-inner">
+          <span class="score-pct" id="score-pct">0%</span>
+          <span class="score-label">Score</span>
+        </div>
+      </div>
+      <div class="score-breakdown" id="score-breakdown"></div>
+    </div>
+
+    <div class="results-tabs">
+      <button class="tab-btn active" data-tab="wrong" id="tab-wrong">Incorrect</button>
+      <button class="tab-btn" data-tab="all" id="tab-all">All questions</button>
+    </div>
+    <div class="results-list" id="results-list"></div>
+
+    <div class="results-actions">
+      <button class="btn btn-primary" id="retry-btn">Retry quiz</button>
+      <button class="btn btn-ghost" id="new-quiz-btn">New quiz</button>
+    </div>
+  </main>
+</div>
+
+<script src="forge.js?v=2"></script>
+</body>
+</html>
