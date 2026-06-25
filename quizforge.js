@@ -459,7 +459,7 @@ ${text}`;
         'Authorization': `Bearer ${this.keys.openrouter}`
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        model: 'openrouter/auto',
         max_tokens: 4096,
         messages: [{ role: 'user', content: this.PROMPT(text) }]
       })
