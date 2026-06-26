@@ -46,7 +46,7 @@ Built for CBSE students who want to practice from question papers without manual
 ## ⚡ Speed Tips
 
 - More keys = faster extraction (parallel processing)
-- Create up to 20 free keys on OpenRouter — each one processes a separate chunk simultaneously
+- Add one or more OpenRouter API keys to enable parallel extraction — each one processes a separate chunk simultaneously
 - Smaller PDFs (under 50 pages) extract in under a minute with 5+ keys
 
 ---
