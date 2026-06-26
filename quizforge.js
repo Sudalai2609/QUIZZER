@@ -456,7 +456,7 @@ ${text}`;
         'Authorization': `Bearer ${key}`
       },
       body: JSON.stringify({
-        model: 'openrouter/free',
+        model: 'mistralai/mistral-7b-instruct:free',
         max_tokens: 1024,
         messages: [{ role: 'user', content: this.PROMPT(text) }]
       })
