@@ -456,7 +456,7 @@ ${text}`;
         'Authorization': `Bearer ${key}`
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-r1:free',
+        model: 'openrouter/free',
         max_tokens: 4096,
         messages: [{ role: 'user', content: this.PROMPT(text) }]
       })
